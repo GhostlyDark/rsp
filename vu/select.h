@@ -13,6 +13,10 @@
 * If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.             *
 \******************************************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _SELECT_H_
 #define _SELECT_H_
 
@@ -35,4 +39,8 @@ VECTOR_EXTERN
 VECTOR_EXTERN
     VMRG   (v16 vs, v16 vt);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

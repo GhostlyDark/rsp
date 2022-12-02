@@ -13,6 +13,10 @@
 * If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.             *
 \******************************************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _MULTIPLY_H_
 #define _MULTIPLY_H_
 
@@ -82,4 +86,8 @@ VECTOR_EXTERN
 #define SEMIFRAC    (VS[i]*VT[i]*2/2 + 0x8000/2)
 #endif
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

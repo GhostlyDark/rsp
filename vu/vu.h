@@ -12,6 +12,11 @@
 * with this software.                                                          *
 * If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.             *
 \******************************************************************************/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _VU_H_
 #define _VU_H_
 
@@ -21,8 +26,8 @@
 
 #include "../my_types.h"
 
-#define N       8
-/* N:  number of processor elements in SIMD processor */
+#define NUM       8
+/* NUM:  number of processor elements in SIMD processor */
 
 /*
  * Illegal, unaligned LWC2 operations on the RSP may write past the terminal
@@ -51,7 +56,7 @@ extern u32 inst_word;
  * For ?WC2 we may need to do byte-precision access just as directly.
  * This is amended by using the `VU_S` and `VU_B` macros defined in `rsp.h`.
  */
-ALIGNED extern i16 VR[32][N << VR_STATIC_WRAPAROUND];
+ALIGNED extern i16 VR[32][NUM << VR_STATIC_WRAPAROUND];
 
 /*
  * The RSP accumulator is a vector of 3 48-bit integers.  Nearly all of the
@@ -59,7 +64,7 @@ ALIGNED extern i16 VR[32][N << VR_STATIC_WRAPAROUND];
  *
  * Access dimensions would be VACC[8][3] but are inverted for SIMD benefits.
  */
-ALIGNED extern i16 VACC[3][N];
+ALIGNED extern i16 VACC[3][NUM];
 
 /*
  * When compiling without SSE2, we need to use a pointer to a destination
@@ -68,7 +73,7 @@ ALIGNED extern i16 VACC[3][N];
  * as a shared global rather than the return slot of a function call.
  */
 #ifndef ARCH_MIN_SSE2
-ALIGNED extern i16 V_result[N];
+ALIGNED extern i16 V_result[NUM];
 #endif
 
 /*
@@ -242,11 +247,11 @@ extern u16 VCO;
 extern u16 VCC;
 extern u8 VCE;
 
-ALIGNED extern i16 cf_ne[N];
-ALIGNED extern i16 cf_co[N];
-ALIGNED extern i16 cf_clip[N];
-ALIGNED extern i16 cf_comp[N];
-ALIGNED extern i16 cf_vce[N];
+ALIGNED extern i16 cf_ne[NUM];
+ALIGNED extern i16 cf_co[NUM];
+ALIGNED extern i16 cf_clip[NUM];
+ALIGNED extern i16 cf_comp[NUM];
+ALIGNED extern i16 cf_vce[NUM];
 
 extern u16 get_VCO(void);
 extern u16 get_VCC(void);
@@ -352,4 +357,8 @@ extern void set_VCE(u8 vce);
 
 #endif
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

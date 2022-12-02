@@ -29,6 +29,10 @@
  * be tested for cross-ABI portability by changing a custom type like `u32`
  * from `unsigned long` to `unsigned short` or vice-versa.
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _MY_TYPES_H_
 #define _MY_TYPES_H_
 
@@ -504,4 +508,8 @@ typedef struct {
 #define COMPILER_FENCE()
 #endif
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

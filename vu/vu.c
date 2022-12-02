@@ -24,10 +24,10 @@
 #include "pack.h"
 #endif
 
-ALIGNED i16 VR[32][N << VR_STATIC_WRAPAROUND];
-ALIGNED i16 VACC[3][N];
+ALIGNED i16 VR[32][NUM << VR_STATIC_WRAPAROUND];
+ALIGNED i16 VACC[3][NUM];
 #ifndef ARCH_MIN_SSE2
-ALIGNED i16 V_result[N];
+ALIGNED i16 V_result[NUM];
 #endif
 
 /*
@@ -35,11 +35,11 @@ ALIGNED i16 V_result[N];
  * However, since SSE2 uses 128-bit XMM's, and Win32 `int` storage is 32-bit,
  * we have the problem of 32*8 > 128 bits, so we use `short` to reduce packs.
  */
-ALIGNED i16 cf_ne[N]; /* $vco:  high "NOTEQUAL" */
-ALIGNED i16 cf_co[N]; /* $vco:  low "carry/borrow in/out" */
-ALIGNED i16 cf_clip[N]; /* $vcc:  high (clip tests:  VCL, VCH, VCR) */
-ALIGNED i16 cf_comp[N]; /* $vcc:  low (VEQ, VNE, VLT, VGE, VCL, VCH, VCR) */
-ALIGNED i16 cf_vce[N]; /* $vce:  vector compare extension register */
+ALIGNED i16 cf_ne[NUM]; /* $vco:  high "NOTEQUAL" */
+ALIGNED i16 cf_co[NUM]; /* $vco:  low "carry/borrow in/out" */
+ALIGNED i16 cf_clip[NUM]; /* $vcc:  high (clip tests:  VCL, VCH, VCR) */
+ALIGNED i16 cf_comp[NUM]; /* $vcc:  low (VEQ, VNE, VLT, VGE, VCL, VCH, VCR) */
+ALIGNED i16 cf_vce[NUM]; /* $vce:  vector compare extension register */
 
 VECTOR_OPERATION res_V(v16 vs, v16 vt)
 {
@@ -210,9 +210,9 @@ void set_VCO(u16 vco)
 {
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_co[i] = (vco >> (i + 0x0)) & 1;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_ne[i] = (vco >> (i + 0x8)) & 1;
     return; /* Little endian becomes big. */
 }
@@ -220,9 +220,9 @@ void set_VCC(u16 vcc)
 {
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_comp[i] = (vcc >> (i + 0x0)) & 1;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_clip[i] = (vcc >> (i + 0x8)) & 1;
     return; /* Little endian becomes big. */
 }
@@ -230,7 +230,7 @@ void set_VCE(u8 vce)
 {
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_vce[i] = (vce >> i) & 1;
     return; /* Little endian becomes big. */
 }

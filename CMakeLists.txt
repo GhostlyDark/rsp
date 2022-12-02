@@ -28,10 +28,10 @@ find_package(Qt5 COMPONENTS Gui Widgets Core REQUIRED)
 
 set(NAME_PLUGIN_M64P "${CMAKE_PROJECT_NAME}")
 set(PATH_SRC "${CMAKE_CURRENT_SOURCE_DIR}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DARCH_MIN_SSE2")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DARCH_MIN_SSE2 -O3 -flto -Wall")
 
 set(CXD4_SOURCES
-"${PATH_SRC}/module.c"
+"${PATH_SRC}/module.cpp"
 "${PATH_SRC}/su.c"
 "${PATH_SRC}/vu/add.c"
 "${PATH_SRC}/vu/divide.c"
@@ -39,6 +39,8 @@ set(CXD4_SOURCES
 "${PATH_SRC}/vu/multiply.c"
 "${PATH_SRC}/vu/select.c"
 "${PATH_SRC}/vu/vu.c"
+"${PATH_SRC}/UserInterface/MainDialog.cpp"
+"${PATH_SRC}/UserInterface/MainDialog.ui"
 )
 
 if (MINGW)

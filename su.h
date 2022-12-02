@@ -13,6 +13,10 @@
 * If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.             *
 \******************************************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _SU_H_
 #define _SU_H_
 
@@ -390,4 +394,8 @@ extern void STV(unsigned vt, unsigned element, signed offset, unsigned base);
 
 NOINLINE extern void run_task(void);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

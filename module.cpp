@@ -42,6 +42,11 @@
 #define ATTR_FMT(fmtpos, attrpos)
 #endif
 
+#include "UserInterface/MainDialog.hpp"
+#include "m64p_types.h"
+#include "m64p_config.h"
+#include <stdbool.h>
+
 static jmp_buf CPU_state;
 static void seg_av_handler(int signal_code)
 {
@@ -69,11 +74,17 @@ RSP_INFO RSP_INFO_NAME;
 static void (*l_DebugCallback)(void *, int, const char *) = NULL;
 static void *l_DebugCallContext = NULL;
 static int l_PluginInit = 0;
-static m64p_handle l_ConfigRsp;
+m64p_handle l_ConfigRsp = NULL;
 
 #define VERSION_PRINTF_SPLIT(x) (((x) >> 16) & 0xffff), (((x) >> 8) & 0xff), ((x) & 0xff)
 
+bool display_list;
+bool audio_list;
+bool wait_for_cpu;
+bool semaphore_lock;
+
 ptr_ConfigOpenSection      ConfigOpenSection = NULL;
+ptr_ConfigSaveSection      ConfigSaveSection = NULL;
 ptr_ConfigDeleteSection    ConfigDeleteSection = NULL;
 ptr_ConfigSetParameter     ConfigSetParameter = NULL;
 ptr_ConfigGetParameter     ConfigGetParameter = NULL;
@@ -145,6 +156,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
 
     /* Get the core config function pointers from the library handle */
     ConfigOpenSection = (ptr_ConfigOpenSection) osal_dynlib_getproc(CoreLibHandle, "ConfigOpenSection");
+    ConfigSaveSection = (ptr_ConfigSaveSection) osal_dynlib_getproc(CoreLibHandle, "ConfigSaveSection");
     ConfigDeleteSection = (ptr_ConfigDeleteSection) osal_dynlib_getproc(CoreLibHandle, "ConfigDeleteSection");
     ConfigSetParameter = (ptr_ConfigSetParameter) osal_dynlib_getproc(CoreLibHandle, "ConfigSetParameter");
     ConfigGetParameter = (ptr_ConfigGetParameter) osal_dynlib_getproc(CoreLibHandle, "ConfigGetParameter");
@@ -153,7 +165,7 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
     ConfigGetParamBool = (ptr_ConfigGetParamBool) osal_dynlib_getproc(CoreLibHandle, "ConfigGetParamBool");
     CoreDoCommand = (ptr_CoreDoCommand) osal_dynlib_getproc(CoreLibHandle, "CoreDoCommand");
 
-    if (!ConfigOpenSection || !ConfigDeleteSection || !ConfigSetParameter || !ConfigGetParameter ||
+    if (!ConfigOpenSection || !ConfigDeleteSection || !ConfigSaveSection || !ConfigSetParameter || !ConfigGetParameter ||
         !ConfigSetDefaultBool || !ConfigGetParamBool || !ConfigSetDefaultFloat)
         return M64ERR_INCOMPATIBLE;
 
@@ -191,11 +203,12 @@ EXPORT m64p_error CALL PluginStartup(m64p_dynlib_handle CoreLibHandle, void *Con
     int hlevideo = 1;
 #endif
     /* set the default values for this plugin */
+    ConfigOpenSection("rsp-cxd4", &l_ConfigRsp);
     ConfigSetDefaultFloat(l_ConfigRsp, "Version", CONFIG_PARAM_VERSION,  "Mupen64Plus cxd4 RSP Plugin config parameter version number");
-    ConfigSetDefaultBool(l_ConfigRsp, "DisplayListToGraphicsPlugin", hlevideo, "Send display lists to the graphics plugin");
-    ConfigSetDefaultBool(l_ConfigRsp, "AudioListToAudioPlugin", 0, "Send audio lists to the audio plugin");
-    ConfigSetDefaultBool(l_ConfigRsp, "WaitForCPUHost", 0, "Force CPU-RSP signals synchronization");
-    ConfigSetDefaultBool(l_ConfigRsp, "SupportCPUSemaphoreLock", 0, "Support CPU-RSP semaphore lock");
+    ConfigSetDefaultBool(l_ConfigRsp, KEY_DisplayListToGraphicsPlugin, hlevideo, "Send display lists to the graphics plugin");
+    ConfigSetDefaultBool(l_ConfigRsp, KEY_AudioListToAudioPlugin, 0, "Send audio lists to the audio plugin");
+    ConfigSetDefaultBool(l_ConfigRsp, KEY_WaitForCPUHost, 0, "Force CPU-RSP signals synchronization");
+    ConfigSetDefaultBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock, 0, "Support CPU-RSP semaphore lock");
 
     l_PluginInit = 1;
     return M64ERR_SUCCESS;
@@ -208,6 +221,21 @@ EXPORT m64p_error CALL PluginShutdown(void)
 
     l_PluginInit = 0;
     return M64ERR_SUCCESS;
+}
+
+extern "C"
+{
+    EXPORT m64p_error CALL PluginConfig(void)
+    {
+        if (!l_PluginInit)
+        {
+            return M64ERR_NOT_INIT;
+        }
+        UserInterface::MainDialog dialog(nullptr);
+        dialog.exec();
+
+        return M64ERR_SUCCESS;
+    }
 }
 
 EXPORT m64p_error CALL PluginGetVersion(m64p_plugin_type *PluginType, int *PluginVersion, int *APIVersion, const char **PluginNamePtr, int *Capabilities)
@@ -235,6 +263,11 @@ EXPORT m64p_error CALL PluginGetVersion(m64p_plugin_type *PluginType, int *Plugi
 
 EXPORT int CALL RomOpen(void)
 {
+    display_list = ConfigGetParamBool(l_ConfigRsp, KEY_DisplayListToGraphicsPlugin);
+    audio_list = ConfigGetParamBool(l_ConfigRsp, KEY_AudioListToAudioPlugin);
+    wait_for_cpu = ConfigGetParamBool(l_ConfigRsp, KEY_WaitForCPUHost);
+    semaphore_lock = ConfigGetParamBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock);
+
     if (!l_PluginInit)
         return 0;
 
@@ -260,7 +293,7 @@ static void init_regs(void)
             raise(SIGTERM); /* Don't proceed if plugin hasn't initialized. */
     srand(time(NULL));
 
-    for (i = 0; i < N; i++) {
+    for (i = 0; i < NUM; i++) {
         VACC_H[i] = ((u64)0xFFFF00000000 >> 32) & 0x0000;
         VACC_M[i] = ((u64)0x0000FFFF0000 >> 16) & 0x0000;
         VACC_L[i] = ((u64)0x00000000FFFF >>  0) & 0x0000;
@@ -278,7 +311,7 @@ static void init_regs(void)
  * explicitly initialized to 0 at power-on or if they temporarily retain old
  * decaying bits, we'll just make them 0 to hush krom's RSP test FAIL yells.
  */
-    for (i = 0; i < N; i++) {
+    for (i = 0; i < NUM; i++) {
         cf_ne[i]   = (rand() & (1 << 15)) ? 0*TRUE : FALSE;
         cf_co[i]   = (rand() & (1 << 12)) ? 0*TRUE : FALSE;
         cf_clip[i] = (rand() & (1 <<  9)) ? 0*TRUE : FALSE;
@@ -291,7 +324,7 @@ static void init_regs(void)
         SR[i] = (u32)rand();
     SR[0] = 0x00000000;
     for (i = 0; i < 32; i++)
-        for (j = 0; j < N; j++)
+        for (j = 0; j < NUM; j++)
             VR[i][j] = (u16)((u32)rand() & 0xFFFFu);
 
     *(RSP_INFO_NAME.SP_PC_REG) = 0x04001000;
@@ -702,7 +735,7 @@ NOINLINE void export_data_cache(void)
     register int i;
  /* const int little_endian = GET_RSP_INFO(MemoryBswaped); */
 
-    DMEM_swapped = calloc(4096, 1);
+    DMEM_swapped = (pu8)calloc(4096, 1);
     for (i = 0; i < 4096; i++)
         DMEM_swapped[i] = DMEM[BES(i)];
     out = fopen("rcpcache.dhex", "wb");
@@ -718,7 +751,7 @@ NOINLINE void export_instruction_cache(void)
     register int i;
  /* const int little_endian = GET_RSP_INFO(MemoryBswaped); */
 
-    IMEM_swapped = calloc(4096, 1);
+    IMEM_swapped = (pu8)calloc(4096, 1);
     for (i = 0; i < 4096; i++)
         IMEM_swapped[i] = IMEM[BES(i)];
     out = fopen("rcpcache.ihex", "wb");
@@ -746,7 +779,8 @@ void export_SP_memory(void)
 BOOL WINAPI
 DllMain(HINSTANCE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-    hModule = lpReserved = NULL; /* unused */
+    hModule = (HINSTANCE)NULL; /* unused */
+    lpReserved = (LPVOID)NULL; /* unused */
     switch (ul_reason_for_call) {
     case 1:  /* DLL_PROCESS_ATTACH */
     case 2:  /* DLL_THREAD_ATTACH */

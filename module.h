@@ -17,7 +17,23 @@
 #define _MODULE_H_
 
 #include <stdio.h>
+#include "m64p_config.h"
 #include "rsp.h"
+
+extern m64p_handle l_ConfigRsp;
+
+extern ptr_ConfigOpenSection ConfigOpenSection;
+extern ptr_ConfigSaveSection ConfigSaveSection;
+extern ptr_ConfigSetDefaultInt ConfigSetDefaultInt;
+extern ptr_ConfigSetDefaultBool ConfigSetDefaultBool;
+extern ptr_ConfigGetParamInt ConfigGetParamInt;
+extern ptr_ConfigGetParamBool ConfigGetParamBool;
+extern ptr_ConfigSetParameter ConfigSetParameter;
+
+#define KEY_DisplayListToGraphicsPlugin "DisplayListToGraphicsPlugin"
+#define KEY_AudioListToAudioPlugin "AudioListToAudioPlugin"
+#define KEY_WaitForCPUHost "WaitForCPUHost"
+#define KEY_SupportCPUSemaphoreLock "SupportCPUSemaphoreLock"
 
 typedef enum {
     M_GFXTASK   = 1,

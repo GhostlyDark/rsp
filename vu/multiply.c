@@ -32,53 +32,53 @@
 
 static INLINE void SIGNED_CLAMP_AM(pi16 VD)
 { /* typical sign-clamp of accumulator-mid (bits 31:16) */
-    i16 hi[N], lo[N];
+    i16 hi[NUM], lo[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         lo[i]  = (VACC_H[i] < ~0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         lo[i] |= (VACC_H[i] < 0) & !(VACC_M[i] < 0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         hi[i]  = (VACC_H[i] >  0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         hi[i] |= (VACC_H[i] == 0) & (VACC_M[i] < 0);
     vector_copy(VD, VACC_M);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] &= -(lo[i] ^ 1);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] |= -(hi[i] ^ 0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] ^= 0x8000 * (hi[i] | lo[i]);
 }
 
 static INLINE void UNSIGNED_CLAMP(pi16 VD)
 { /* sign-zero hybrid clamp of accumulator-mid (bits 31:16) */
-    ALIGNED i16 temp[N];
-    i16 cond[N];
+    ALIGNED i16 temp[NUM];
+    i16 cond[NUM];
     register unsigned int i;
 
     SIGNED_CLAMP_AM(temp); /* no direct map in SSE, but closely based on this */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cond[i] = -(temp[i] >  VACC_M[i]); /* VD |= -(ACC47..16 > +32767) */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] = temp[i] & ~(temp[i] >> 15); /* Only this clamp is unsigned. */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] = VD[i] | cond[i];
 }
 
 static INLINE void SIGNED_CLAMP_AL(pi16 VD)
 { /* sign-clamp accumulator-low (bits 15:0) */
-    ALIGNED i16 temp[N];
-    i16 cond[N];
+    ALIGNED i16 temp[NUM];
+    i16 cond[NUM];
     register unsigned int i;
 
     SIGNED_CLAMP_AM(temp); /* no direct map in SSE, but closely based on this */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cond[i] = (temp[i] != VACC_M[i]); /* result_clamped != result_raw ? */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         temp[i] ^= 0x8000; /* clamps 0x0000:0xFFFF instead of -0x8000:+0x7FFF */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] = (cond[i] ? temp[i] : VACC_L[i]);
 }
 #endif
@@ -134,20 +134,20 @@ VECTOR_OPERATION VMULF(v16 vs, v16 vt)
     *(v16 *)VACC_H = negative; /* 2*i16*i16 only fills L/M; VACC_H = 0 or ~0. */
     return _mm_add_epi16(vs, prod_hi); /* prod_hi must be -32768; - 1 = +32767 */
 #else
-    word_64 product[N]; /* (-32768 * -32768)<<1 + 32768 confuses 32-bit type. */
+    word_64 product[NUM]; /* (-32768 * -32768)<<1 + 32768 confuses 32-bit type. */
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W = vs[i] * vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W <<= 1; /* special fractional shift value */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W += 32768; /* special fractional round value */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (product[i].UW & 0x00000000FFFF) >>  0;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (product[i].UW & 0x0000FFFF0000) >> 16;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] = -(product[i].SW < 0); /* product>>32 & 0xFFFF */
     SIGNED_CLAMP_AM(V_result);
 #endif
@@ -196,20 +196,20 @@ VECTOR_OPERATION VMULU(v16 vs, v16 vt)
     vs = _mm_or_si128(prod_hi, prod_lo);
     return _mm_andnot_si128(negative, vs); /* unsigned underflow mask */
 #else
-    word_64 product[N]; /* (-32768 * -32768)<<1 + 32768 confuses 32-bit type. */
+    word_64 product[NUM]; /* (-32768 * -32768)<<1 + 32768 confuses 32-bit type. */
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W = vs[i] * vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W <<= 1; /* special fractional shift value */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].W += 32768; /* special fractional round value */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (product[i].UW & 0x00000000FFFF) >>  0;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (product[i].UW & 0x0000FFFF0000) >> 16;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] = -(product[i].SW < 0); /* product>>32 & 0xFFFF */
     UNSIGNED_CLAMP(V_result);
 #endif
@@ -225,12 +225,12 @@ VECTOR_OPERATION VMUDL(v16 vs, v16 vt)
     *(v16 *)VACC_H = vt;
     return (vs); /* no possibilities to clamp */
 #else
-    word_32 product[N];
+    word_32 product[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].UW = (u16)vs[i] * (u16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = product[i].UW >> 16; /* product[i].H[HES(0) >> 1] */
     vector_copy(V_result, VACC_L);
     vector_wipe(VACC_M);
@@ -261,16 +261,16 @@ VECTOR_OPERATION VMUDM(v16 vs, v16 vt)
     *(v16 *)VACC_H = prod_hi;
     return (vs);
 #else
-    word_32 product[N];
+    word_32 product[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (s16)vs[i] * (u16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (product[i].W & 0x00000000FFFF) >>  0;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (product[i].W & 0x0000FFFF0000) >> 16;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] = -(VACC_M[i] < 0);
     vector_copy(V_result, VACC_M);
 #endif
@@ -298,16 +298,16 @@ VECTOR_OPERATION VMUDN(v16 vs, v16 vt)
     *(v16 *)VACC_H = prod_hi;
     return (prod_lo);
 #else
-    word_32 product[N];
+    word_32 product[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (u16)vs[i] * (s16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (product[i].W & 0x00000000FFFF) >>  0;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (product[i].W & 0x0000FFFF0000) >> 16;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] = -(VACC_M[i] < 0);
     vector_copy(V_result, VACC_L);
 #endif
@@ -338,15 +338,15 @@ VECTOR_OPERATION VMUDH(v16 vs, v16 vt)
  */
     return _mm_packs_epi32(vs, vt);
 #else
-    word_32 product[N];
+    word_32 product[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (s16)vs[i] * (s16)vt[i];
     vector_wipe(VACC_L);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (s16)(product[i].W >>  0); /* product[i].HW[HES(0) >> 1] */
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] = (s16)(product[i].W >> 16); /* product[i].HW[HES(2) >> 1] */
     SIGNED_CLAMP_AM(V_result);
 #endif
@@ -394,26 +394,26 @@ VECTOR_OPERATION VMACF(v16 vs, v16 vt)
     vs = _mm_unpacklo_epi16(acc_md, acc_hi);
     return _mm_packs_epi32(vs, vt);
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = vs[i] * vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (product[i].SW << 1) & 0x00000000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)(VACC_L[i]) + addend[i].UW;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (i16)(addend[i].UW);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (addend[i].UW >> 16) + (u16)(product[i].SW >> 15);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)(VACC_M[i]) + addend[i].UW;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (i16)(addend[i].UW);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] -= (product[i].SW < 0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += addend[i].UW >> 16;
     SIGNED_CLAMP_AM(V_result);
 #endif
@@ -464,26 +464,26 @@ VECTOR_OPERATION VMACU(v16 vs, v16 vt)
     vs = _mm_andnot_si128(_mm_srai_epi16(vs, 15), vs);
     return _mm_or_si128(vs, overflow);
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = vs[i] * vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (product[i].SW << 1) & 0x00000000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)(VACC_L[i]) + addend[i].UW;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = (i16)(addend[i].UW);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (addend[i].UW >> 16) + (u16)(product[i].SW >> 15);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)(VACC_M[i]) + addend[i].UW;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = (i16)(addend[i].UW);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] -= (product[i].SW < 0);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += addend[i].UW >> 16;
     UNSIGNED_CLAMP(V_result);
 #endif
@@ -541,22 +541,22 @@ VECTOR_OPERATION VMADL(v16 vs, v16 vt)
     acc_md = _mm_slli_epi16(acc_md, 15); /* ... ? ^ 0x8000 : ^ 0x0000 */
     return _mm_xor_si128(vs, acc_md); /* stupid unsigned-clamp-ish adjustment */
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].UW = (u16)vs[i] * (u16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)(product[i].UW >> 16) + (u16)VACC_L[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (addend[i].UW >> 16) + (0x000000000000 >> 16);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW += (u16)VACC_M[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += addend[i].UW >> 16;
     SIGNED_CLAMP_AL(V_result);
 #endif
@@ -602,22 +602,22 @@ VECTOR_OPERATION VMADM(v16 vs, v16 vt)
     vs = _mm_unpacklo_epi16(acc_md, acc_hi);
     return _mm_packs_epi32(vs, vt);
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (s16)vs[i] * (u16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (product[i].W & 0x0000FFFF) + (u16)VACC_L[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (addend[i].UW >> 16) + (product[i].SW >> 16);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW += (u16)VACC_M[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += addend[i].UW >> 16;
     SIGNED_CLAMP_AM(V_result);
 #endif
@@ -681,22 +681,22 @@ VECTOR_OPERATION VMADN(v16 vs, v16 vt)
     acc_md = _mm_slli_epi16(acc_md, 15); /* ... ? ^ 0x8000 : ^ 0x0000 */
     return _mm_xor_si128(vs, acc_md); /* stupid unsigned-clamp-ish adjustment */
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (u16)vs[i] * (s16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (product[i].W & 0x0000FFFF) + (u16)VACC_L[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (addend[i].UW >> 16) + (product[i].SW >> 16);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW += (u16)VACC_M[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] = addend[i].UW & 0x0000FFFF;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += addend[i].UW >> 16;
     SIGNED_CLAMP_AL(V_result);
 #endif
@@ -738,16 +738,16 @@ VECTOR_OPERATION VMADH(v16 vs, v16 vt)
     vs        = _mm_unpacklo_epi16(vs, vt);
     return _mm_packs_epi32(vs, prod_high);
 #else
-    word_32 product[N], addend[N];
+    word_32 product[NUM], addend[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         product[i].SW = (s16)vs[i] * (s16)vt[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         addend[i].UW = (u16)VACC_M[i] + (u16)(product[i].W);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_M[i] += (i16)product[i].SW;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_H[i] += (addend[i].UW >> 16) + (product[i].SW >> 16);
     SIGNED_CLAMP_AM(V_result);
 #endif

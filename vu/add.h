@@ -13,6 +13,10 @@
 * If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.             *
 \******************************************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef _ADD_H_
 #define _ADD_H_
 
@@ -31,4 +35,8 @@ VECTOR_EXTERN
 VECTOR_EXTERN
     VSAW   (v16 vs, v16 vt);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

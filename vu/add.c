@@ -72,43 +72,43 @@ static INLINE void SIGNED_CLAMP_SUB(pi16 VD, pi16 VS, pi16 VT)
 #else
 static INLINE void SIGNED_CLAMP_ADD(pi16 VD, pi16 VS, pi16 VT)
 {
-    i32 sum[N];
-    i16 hi[N], lo[N];
+    i32 sum[NUM];
+    i16 hi[NUM], lo[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         sum[i] = VS[i] + VT[i] + cf_co[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         lo[i] = (sum[i] + 0x8000) >> 31;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         hi[i] = (0x7FFF - sum[i]) >> 31;
     vector_copy(VD, VACC_L);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] &= ~lo[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] |=  hi[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] ^= 0x8000 & (hi[i] | lo[i]);
     return;
 }
 static INLINE void SIGNED_CLAMP_SUB(pi16 VD, pi16 VS, pi16 VT)
 {
-    i32 dif[N];
-    i16 hi[N], lo[N];
+    i32 dif[NUM];
+    i16 hi[NUM], lo[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         dif[i] = VS[i] - VT[i] - cf_co[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         lo[i] = (dif[i] + 0x8000) >> 31;
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         hi[i] = (0x7FFF - dif[i]) >> 31;
     vector_copy(VD, VACC_L);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] &= ~lo[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] |=  hi[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VD[i] ^= 0x8000 & (hi[i] | lo[i]);
     return;
 }
@@ -118,7 +118,7 @@ INLINE static void clr_ci(pi16 VD, pi16 VS, pi16 VT)
 { /* clear CARRY and carry in to accumulators */
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = VS[i] + VT[i] + cf_co[i];
     SIGNED_CLAMP_ADD(VD, VS, VT);
 
@@ -132,7 +132,7 @@ INLINE static void clr_bi(pi16 VD, pi16 VS, pi16 VT)
 { /* clear CARRY and borrow in to accumulators */
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = VS[i] - VT[i] - cf_co[i];
     SIGNED_CLAMP_SUB(VD, VS, VT);
 
@@ -150,30 +150,30 @@ INLINE static void clr_bi(pi16 VD, pi16 VS, pi16 VT)
  */
 INLINE static void do_abs(pi16 VD, pi16 VS, pi16 VT)
 {
-    i16 neg[N], pos[N];
-    i16 nez[N], cch[N]; /* corner case hack -- abs(-32768) == +32767 */
-    ALIGNED i16 res[N];
+    i16 neg[NUM], pos[NUM];
+    i16 nez[NUM], cch[NUM]; /* corner case hack -- abs(-32768) == +32767 */
+    ALIGNED i16 res[NUM];
     register unsigned int i;
 
     vector_copy(res, VT);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cch[i]  = (res[i] == -32768);
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         neg[i]  = (VS[i] <  0x0000);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         pos[i]  = (VS[i] >  0x0000);
     //vector_wipe(nez);
     memset(&nez, 0, sizeof(nez));
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         nez[i] -= neg[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         nez[i] += pos[i];
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         res[i] *= nez[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         res[i] -= cch[i];
     vector_copy(VACC_L, res);
     vector_copy(VD, VACC_L);
@@ -182,33 +182,33 @@ INLINE static void do_abs(pi16 VD, pi16 VS, pi16 VT)
 
 INLINE static void set_co(pi16 VD, pi16 VS, pi16 VT)
 { /* set CARRY and carry out from sum */
-    i32 sum[N];
+    i32 sum[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         sum[i] = (u16)(VS[i]) + (u16)(VT[i]);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = VS[i] + VT[i];
     vector_copy(VD, VACC_L);
 
     vector_wipe(cf_ne);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_co[i] = sum[i] >> 16; /* native:  (sum[i] > +65535) */
     return;
 }
 
 INLINE static void set_bo(pi16 VD, pi16 VS, pi16 VT)
 { /* set CARRY and borrow out from difference */
-    i32 dif[N];
+    i32 dif[NUM];
     register unsigned int i;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         dif[i] = (u16)(VS[i]) - (u16)(VT[i]);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         VACC_L[i] = VS[i] - VT[i];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_ne[i] = (VS[i] != VT[i]);
-    for (i = 0; i < N; i++)
+    for (i = 0; i < NUM; i++)
         cf_co[i] = (dif[i] < 0);
     vector_copy(VD, VACC_L);
     return;
@@ -216,9 +216,9 @@ INLINE static void set_bo(pi16 VD, pi16 VS, pi16 VT)
 
 VECTOR_OPERATION VADD(v16 vs, v16 vt)
 {
-    ALIGNED i16 VD[N];
+    ALIGNED i16 VD[NUM];
 #ifdef ARCH_MIN_SSE2
-    ALIGNED i16 VS[N], VT[N];
+    ALIGNED i16 VS[NUM], VT[NUM];
 
     *(v16 *)VS = vs;
     *(v16 *)VT = vt;
@@ -241,9 +241,9 @@ VECTOR_OPERATION VADD(v16 vs, v16 vt)
 
 VECTOR_OPERATION VSUB(v16 vs, v16 vt)
 {
-    ALIGNED i16 VD[N];
+    ALIGNED i16 VD[NUM];
 #ifdef ARCH_MIN_SSE2
-    ALIGNED i16 VS[N], VT[N];
+    ALIGNED i16 VS[NUM], VT[NUM];
 
     *(v16 *)VS = vs;
     *(v16 *)VT = vt;
@@ -266,9 +266,9 @@ VECTOR_OPERATION VSUB(v16 vs, v16 vt)
 
 VECTOR_OPERATION VABS(v16 vs, v16 vt)
 {
-    ALIGNED i16 VD[N];
+    ALIGNED i16 VD[NUM];
 #ifdef ARCH_MIN_SSE2
-    ALIGNED i16 VS[N], VT[N];
+    ALIGNED i16 VS[NUM], VT[NUM];
 
     *(v16 *)VS = vs;
     *(v16 *)VT = vt;
@@ -291,9 +291,9 @@ VECTOR_OPERATION VABS(v16 vs, v16 vt)
 
 VECTOR_OPERATION VADDC(v16 vs, v16 vt)
 {
-    ALIGNED i16 VD[N];
+    ALIGNED i16 VD[NUM];
 #ifdef ARCH_MIN_SSE2
-    ALIGNED i16 VS[N], VT[N];
+    ALIGNED i16 VS[NUM], VT[NUM];
 
     *(v16 *)VS = vs;
     *(v16 *)VT = vt;
@@ -316,9 +316,9 @@ VECTOR_OPERATION VADDC(v16 vs, v16 vt)
 
 VECTOR_OPERATION VSUBC(v16 vs, v16 vt)
 {
-    ALIGNED i16 VD[N];
+    ALIGNED i16 VD[NUM];
 #ifdef ARCH_MIN_SSE2
-    ALIGNED i16 VS[N], VT[N];
+    ALIGNED i16 VS[NUM], VT[NUM];
 
     *(v16 *)VS = vs;
     *(v16 *)VT = vt;

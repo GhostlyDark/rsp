@@ -759,7 +759,7 @@ void SDV(unsigned vt, unsigned element, signed offset, unsigned base)
         register unsigned int i;
 
 #if (VR_STATIC_WRAPAROUND == 1)
-        vector_copy(VR[vt] + N, VR[vt]);
+        vector_copy(VR[vt] + NUM, VR[vt]);
         for (i = 0; i < 8; i++)
             DMEM[BES(addr++ & 0x00000FFF)] = VR_B(vt, e + i);
 #else
@@ -1472,7 +1472,7 @@ void SQV(unsigned vt, unsigned element, signed offset, unsigned base)
         register unsigned int i;
 
 #if (VR_STATIC_WRAPAROUND == 1)
-        vector_copy(VR[vt] + N, VR[vt]);
+        vector_copy(VR[vt] + NUM, VR[vt]);
         for (i = 0; i < 16 - addr%16; i++)
             DMEM[BES((addr + i) & 0xFFF)] = VR_B(vt, e + i);
 #else
@@ -1853,7 +1853,7 @@ PROFILE_MODE void COP2(u32 inst)
 #endif
 
     switch (op) {
-        static ALIGNED i16 shuffle_temporary[N];
+        static ALIGNED i16 shuffle_temporary[NUM];
 #ifdef ARCH_MIN_SSE2
         v16 target;
 #else
@@ -1900,7 +1900,7 @@ PROFILE_MODE void COP2(u32 inst)
 #endif
         *(v16 *)(VR[vd]) = COP2_C2[func](*(v16 *)VR[vs], target);
 #else
-        for (i = 0; i < N; i++)
+        for (i = 0; i < NUM; i++)
             shuffle_temporary[i] = VR[vt][(i & 0xE) + (e & 0x1)];
         COP2_C2[func](&VR[vs][0], &shuffle_temporary[0]);
         vector_copy(&VR[vd][0], &V_result[0]);
@@ -1923,7 +1923,7 @@ PROFILE_MODE void COP2(u32 inst)
 #endif
         *(v16 *)(VR[vd]) = COP2_C2[func](*(v16 *)VR[vs], target);
 #else
-        for (i = 0; i < N; i++)
+        for (i = 0; i < NUM; i++)
             shuffle_temporary[i] = VR[vt][(i & 0xC) + (e & 0x3)];
         COP2_C2[func](&VR[vs][0], &shuffle_temporary[0]);
         vector_copy(&VR[vd][0], &V_result[0]);
@@ -1943,8 +1943,8 @@ PROFILE_MODE void COP2(u32 inst)
             _mm_set1_epi16(VR[vt][op - 0x18])
         );
 #else
-        for (i = 0; i < N; i++)
-            shuffle_temporary[i] = VR[vt][e % N];
+        for (i = 0; i < NUM; i++)
+            shuffle_temporary[i] = VR[vt][e % NUM];
         COP2_C2[func](&VR[vs][0], &shuffle_temporary[0]);
         vector_copy(&VR[vd][0], &V_result[0]);
 #endif
