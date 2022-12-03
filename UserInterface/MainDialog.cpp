@@ -20,8 +20,8 @@ MainDialog::MainDialog(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHi
 
     this->DisplayListToGraphicsPluginCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_DisplayListToGraphicsPlugin));
     this->AudioListToAudioPluginCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_AudioListToAudioPlugin));
-    this->WaitForCPUHostCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_WaitForCPUHost));
-    this->SupportCPUSemaphoreLockCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock));
+//  this->WaitForCPUHostCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_WaitForCPUHost));
+//  this->SupportCPUSemaphoreLockCheckBox->setChecked(ConfigGetParamBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock));
 }
 
 MainDialog::~MainDialog()
@@ -41,13 +41,13 @@ void MainDialog::on_buttonBox_clicked(QAbstractButton* button)
     // checkboxes
     int DisplayListToGraphicsPluginValue = this->DisplayListToGraphicsPluginCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_DisplayListToGraphicsPlugin));
     int AudioListToAudioPluginValue = this->AudioListToAudioPluginCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_AudioListToAudioPlugin));
-    int WaitForCPUHostValue = this->WaitForCPUHostCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_WaitForCPUHost));
-    int SupportCPUSemaphoreLockValue = this->SupportCPUSemaphoreLockCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock));
+//  int WaitForCPUHostValue = this->WaitForCPUHostCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_WaitForCPUHost));
+//  int SupportCPUSemaphoreLockValue = this->SupportCPUSemaphoreLockCheckBox->isChecked() ? 1 : 0; //(ConfigGetParamBool(l_ConfigRsp, KEY_SupportCPUSemaphoreLock));
 
     ConfigSetParameter(l_ConfigRsp, KEY_DisplayListToGraphicsPlugin, M64TYPE_BOOL, &DisplayListToGraphicsPluginValue);
     ConfigSetParameter(l_ConfigRsp, KEY_AudioListToAudioPlugin, M64TYPE_BOOL, &AudioListToAudioPluginValue);
-    ConfigSetParameter(l_ConfigRsp, KEY_WaitForCPUHost, M64TYPE_BOOL, &WaitForCPUHostValue);
-    ConfigSetParameter(l_ConfigRsp, KEY_SupportCPUSemaphoreLock, M64TYPE_BOOL, &SupportCPUSemaphoreLockValue);
+//  ConfigSetParameter(l_ConfigRsp, KEY_WaitForCPUHost, M64TYPE_BOOL, &WaitForCPUHostValue);
+//  ConfigSetParameter(l_ConfigRsp, KEY_SupportCPUSemaphoreLock, M64TYPE_BOOL, &SupportCPUSemaphoreLockValue);
 
     ConfigSaveSection("rsp-cxd4");
 }

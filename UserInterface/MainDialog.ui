@@ -42,20 +42,6 @@
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="WaitForCPUHostCheckBox">
-             <property name="text">
-              <string>Wait for CPU host</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="SupportCPUSemaphoreLockCheckBox">
-             <property name="text">
-              <string>Support CPU semaphore lock</string>
-             </property>
-            </widget>
-           </item>
           </layout>
          </item>
          <item>
