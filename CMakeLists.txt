@@ -1,21 +1,28 @@
 cmake_minimum_required(VERSION 3.9)
-set(CMAKE_CXX_STANDARD 14)
+
+option(SSE2 "Enables Streaming SIMD Extensions 2" OFF)
+
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
 project(mupen64plus-rsp-cxd4 LANGUAGES CXX C)
 
 include_directories(../mupen64plus-core/src/api)
 add_definitions(-DM64P_PLUGIN_API)
 
+if(SSE2)
+    add_definitions(-DARCH_MIN_SSE2)
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
 cmake_policy(SET CMP0069 NEW)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT ENABLE_IPO)
 if(ENABLE_IPO)
     message("Interprocedural optimizations enabled")
-endif(ENABLE_IPO)
+endif()
 
 if(ENABLE_IPO AND (CMAKE_BUILD_TYPE STREQUAL "Release"))
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
@@ -28,7 +35,6 @@ find_package(Qt5 COMPONENTS Gui Widgets Core REQUIRED)
 
 set(NAME_PLUGIN_M64P "${CMAKE_PROJECT_NAME}")
 set(PATH_SRC "${CMAKE_CURRENT_SOURCE_DIR}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DARCH_MIN_SSE2 -O3 -flto -Wall")
 
 set(CXD4_SOURCES
 "${PATH_SRC}/module.cpp"
@@ -43,7 +49,7 @@ set(CXD4_SOURCES
 "${PATH_SRC}/UserInterface/MainDialog.ui"
 )
 
-if (MINGW)
+if(MINGW)
   list(APPEND CXD4_SOURCES
     "${PATH_SRC}/osal_dynamiclib_win32.c"
   )
